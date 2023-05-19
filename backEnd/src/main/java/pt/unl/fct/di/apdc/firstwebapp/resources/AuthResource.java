@@ -28,7 +28,7 @@ import pt.unl.fct.di.apdc.firstwebapp.util.Extra;
 import pt.unl.fct.di.apdc.firstwebapp.util.LoginData;
 
 
-@Path("/Auth")
+@Path("/auth")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class AuthResource {
 	
@@ -115,6 +115,12 @@ public class AuthResource {
 	public Response SigninProf(SignInData data) {
 		return doRegister("Docente", data);
 	}
+	@POST
+	@Path("/GS/signIn")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response SigninGS(SignInData data) {
+		return doRegister("GS", data);
+	}
 	
 	@POST
 	@Path("/login")
@@ -148,8 +154,9 @@ public class AuthResource {
 			}
 
 			String HashedPWD = user.getString("user_pwd");
+			long state = user.getLong("user_state");
 
-			if (HashedPWD.equals(DigestUtils.sha512Hex(data.password))) {
+			if (HashedPWD.equals(DigestUtils.sha512Hex(data.password)) && state == 1l) {
 
 				Entity log = Entity.newBuilder(logKey).set("user_login_ip", request.getRemoteAddr())
 						.set("user_login_host", request.getRemoteHost()).set("user_login_time", Timestamp.now())

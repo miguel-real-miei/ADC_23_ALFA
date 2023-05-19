@@ -140,7 +140,7 @@ public class UsersResource {
 	
 	//TODO: alterar
 	@PUT
-	@Path("/{username}/state")
+	@Path("/state/{username}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response changeState(@PathParam("username") String userToChange, @Context HttpHeaders headers, @Context SecurityContext secContext) {
 		LOG.fine("Attempt to change state user: " + userToChange);
@@ -157,7 +157,16 @@ public class UsersResource {
 				LOG.warning("user does not exist " + userToChange);
 				return Response.status(Status.BAD_REQUEST).build();
 			}
-			long state = 1;
+			
+			if(user.getString("user_role").equals(role)) {
+				txn.rollback();
+				LOG.warning("user with same role cannot change state");
+				return Response.status(Status.BAD_REQUEST).build();
+			}
+			
+			long state = user.getLong("user_state");
+			
+			state = 1 - state;
 
 			user = Entity.newBuilder(user).set("user_state", state).build();
 

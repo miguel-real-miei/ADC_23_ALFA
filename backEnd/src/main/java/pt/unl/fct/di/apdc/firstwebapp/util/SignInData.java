@@ -24,7 +24,7 @@ public class SignInData {
 			return false;
 		}
 		
-		if(password.equals(passwordConfirm)) {
+		if(!password.equals(passwordConfirm)) {
 			return false;
 		}
 		

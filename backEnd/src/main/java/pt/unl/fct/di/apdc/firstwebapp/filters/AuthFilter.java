@@ -38,17 +38,18 @@ public class AuthFilter implements ContainerRequestFilter, ContainerResponseFilt
 
 	@Override
 	public void filter(ContainerRequestContext requestContext) throws IOException {
-		if (!(requestContext.getUriInfo().getPath().contains("Auth"))) {
+		if (!requestContext.getUriInfo().getPath().contains("auth")) {
 			String tokenString = requestContext.getHeaderString("token");
 			
 			try {
 				AuthToken token = AuthTokenDecode(tokenString);
 				if (checkToken(tokenString, token.username)) {
-					if(requestContext.getUriInfo().getPath().contains("state") && !token.role.equals("SU")) {
+					if(requestContext.getUriInfo().getPath().contains("state") && (!token.role.equals("SU") && !token.role.equals("GS"))) {
 						requestContext.abortWith(
 				                Response.status(Response.Status.UNAUTHORIZED)
 				                        .build());
 					}
+					LOG.warning("cheguei aqui");
 					requestContext.setSecurityContext(new mySecurityContext(token.role, token.username));
 				} else {
 					requestContext.abortWith(
@@ -68,11 +69,12 @@ public class AuthFilter implements ContainerRequestFilter, ContainerResponseFilt
 	@Override
 	public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
 			throws IOException {
-		if (!(requestContext.getUriInfo().getPath().contains("Auth"))) {
-			String username = requestContext.getSecurityContext().getUserPrincipal().getName();
+		if (!(requestContext.getUriInfo().getPath().contains("auth"))) {
+			/*String username = requestContext.getSecurityContext().getUserPrincipal().getName();
 			String role = requestContext.getSecurityContext().getAuthenticationScheme();
 			AuthToken at = new AuthToken(username, role);
-			String token = AuthTokenCreate(at);
+			String token = AuthTokenCreate(at);*/
+			String token = requestContext.getHeaderString("token");
 			responseContext.getHeaders().add("token", token);
 		}
 		

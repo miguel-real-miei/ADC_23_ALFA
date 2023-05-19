@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -18,6 +19,7 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.appengine.repackaged.org.apache.commons.codec.digest.DigestUtils;
+import com.google.appengine.repackaged.org.apache.commons.logging.Log;
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
@@ -57,19 +59,21 @@ public class EventsResource {
 		String role = secContext.getAuthenticationScheme();
 
 		LOG.fine("Creating a event by " + username);
+		
 
 		if (Extra.roleToInt(role) != 1) {
 			Transaction txn = datastore.newTransaction();
 
-			String id = DigestUtils.sha256Hex(UUID.randomUUID().toString() + data.name + data.location + data.date);
+			String id = DigestUtils.sha256Hex(data.name + data.location + data.date);
 			try {
 				Key eventKey = datastore.newKeyFactory().setKind("Events").newKey(id);
 				Entity event = txn.get(eventKey);
 				if (event != null) {
 					txn.rollback();
 					LOG.severe("Event with same id");
-					return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Try again").build();
+					return Response.status(Status.BAD_REQUEST).entity("Try again").build();
 				} else {
+					LOG.warning("8");
 					event = Entity.newBuilder(eventKey).set("event_owner", username).set("event_name", data.name)
 							.set("event_type", data.type).set("event_date", data.date).set("event_time", data.time)
 							.set("event_duration", data.duration).set("event_description", data.description)
@@ -96,6 +100,7 @@ public class EventsResource {
 		}
 
 	}
+	
 
 	@DELETE
 	@Path("/delete/{eventId}")
@@ -260,7 +265,7 @@ public class EventsResource {
 	@PUT
 	@Path("/edit/{eventId}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response volunteerForEvent(@PathParam("eventId") String eventId,  EventCreationData data, @Context SecurityContext secContext) {
+	public Response editForEvent(@PathParam("eventId") String eventId,  EventCreationData data, @Context SecurityContext secContext) {
 
 		String username = secContext.getUserPrincipal().getName();
 		String role = secContext.getAuthenticationScheme();
@@ -316,6 +321,80 @@ public class EventsResource {
 			txn.commit();
 			
 			return Response.ok().build();
+
+		} catch (Exception e) {
+			txn.rollback();
+			LOG.severe(e.getMessage());
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+		} finally {
+			if (txn.isActive()) {
+				txn.rollback();
+				return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+			}
+		}
+	}
+	
+	@GET
+	@Path("/get/{eventId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response getEvent(@PathParam("eventId") String eventId, @Context SecurityContext secContext) {
+
+		String username = secContext.getUserPrincipal().getName();
+		String role = secContext.getAuthenticationScheme();
+		LOG.severe("Volunteer does not have clerance to update");
+		LOG.fine("deleting a event " + eventId + " by " + username);
+		LOG.severe("Volunteer does not have clerance to update");
+
+		Key eventKey = datastore.newKeyFactory().setKind("Events").newKey(eventId);
+		Transaction txn = datastore.newTransaction();
+		LOG.severe("Volunteer does not have clerance to update");
+		try {
+			Entity event = txn.get(eventKey);
+			if (event == null) {
+				txn.rollback();
+				LOG.severe("Event does not exist");
+				return Response.status(Status.NOT_FOUND).build();
+			}
+			LOG.severe("Volunteer does not have clerance to update");
+			txn.commit();
+			return Response.ok(g.toJson(event)).build();
+
+		} catch (Exception e) {
+			txn.rollback();
+			LOG.severe(e.getMessage());
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+		} finally {
+			if (txn.isActive()) {
+				txn.rollback();
+				return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+			}
+		}
+	}
+	
+	@GET
+	@Path("/getevent")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response getEvent(@Context SecurityContext secContext) {
+
+		String username = secContext.getUserPrincipal().getName();
+		String role = secContext.getAuthenticationScheme();
+		LOG.warning("1");
+		LOG.fine("deleting a event " + "234" + " by " + username);
+		LOG.warning("2");
+
+		Key eventKey = datastore.newKeyFactory().setKind("Events").newKey("0ab9f6267f23e812015b722c900da856ae6d8f04b534d1bd15c09d09cbdfd0d6");
+		Transaction txn = datastore.newTransaction();
+		LOG.warning("3");
+		try {
+			Entity event = txn.get(eventKey);
+			if (event == null) {
+				txn.rollback();
+				LOG.severe("Event does not exist");
+				return Response.status(Status.NOT_FOUND).build();
+			}
+			LOG.warning("4e");
+			txn.commit();
+			return Response.ok(g.toJson(event)).build();
 
 		} catch (Exception e) {
 			txn.rollback();
